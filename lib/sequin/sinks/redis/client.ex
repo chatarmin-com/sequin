@@ -98,8 +98,17 @@ defmodule Sequin.Sinks.Redis.Client do
 
   defp qp(connection, commands) do
     case :eredis.qp(connection, commands, to_timeout(second: 15)) do
-      {:error, error} -> {:error, handle_error(error)}
-      _res -> :ok
+      {:error, error} ->
+        {:error, handle_error(error)}
+
+      results when is_list(results) ->
+        Enum.reduce_while(results, :ok, fn
+          {:ok, _response}, :ok ->
+            {:cont, :ok}
+
+          {:error, error}, :ok ->
+            {:halt, {:error, handle_error(error)}}
+        end)
     end
   catch
     :exit, {error, _} ->
