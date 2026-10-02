@@ -17,6 +17,14 @@ RUN git clone --depth 1 --branch v${SEQUIN_CLI_VERSION} https://github.com/sequi
     && cd /tmp/sequin/cli \
     && go build -o /sequin-cli
 
+# Retain the CLI's upstream license and dependency notices.
+RUN mkdir -p /licenses/cli \
+    && cp /tmp/sequin/LICENSE /licenses/cli/LICENSE \
+    && cp /usr/local/go/LICENSE /licenses/cli/GO-LICENSE \
+    && cd /go/pkg/mod \
+    && find . -type f \( -iname 'LICENSE*' -o -iname 'COPYING*' -o -iname 'NOTICE*' \) \
+       -exec cp --parents {} /licenses/cli/ \;
+
 # ---- Elixir Build Stage ----
 FROM ${BUILDER_IMAGE} AS builder
 
@@ -95,6 +103,12 @@ COPY config/runtime.exs config/
 COPY rel rel
 RUN mix release
 
+# Retain license files from dependencies bundled into the release and assets.
+RUN mkdir -p /licenses/app \
+    && find deps assets/vendor assets/node_modules -type f \
+       \( -iname 'LICENSE*' -o -iname 'COPYING*' -o -iname 'NOTICE*' \) \
+       -exec cp --parents {} /licenses/app/ \;
+
 # start a new build stage so that the final image will only contain
 # the compiled release and other runtime necessities
 # ---- App Stage ----
@@ -130,6 +144,10 @@ ENV LC_ALL=en_US.UTF-8
 RUN useradd --create-home app
 WORKDIR /home/app
 COPY --from=builder --chown=app /app/_build .
+
+COPY LICENSE NOTICE /usr/share/licenses/cx-sequin/
+COPY --from=builder /licenses/app /usr/share/licenses/cx-sequin/app/
+COPY --from=cli-builder /licenses/cli /usr/share/licenses/cx-sequin/cli/
 
 COPY .iex.exs .
 RUN ln -s /home/app/prod/rel/sequin/bin/sequin /usr/local/bin/sequin-server
