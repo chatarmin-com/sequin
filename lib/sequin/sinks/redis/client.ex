@@ -98,13 +98,22 @@ defmodule Sequin.Sinks.Redis.Client do
 
   defp qp(connection, commands) do
     case :eredis.qp(connection, commands, to_timeout(second: 15)) do
-      {:error, error} -> {:error, handle_error(error)}
-      _res -> :ok
+      {:error, error} ->
+        {:error, handle_error(error)}
+
+      results when is_list(results) ->
+        check_pipeline_results(results)
     end
   catch
     :exit, {error, _} ->
       {:error, handle_error(error)}
   end
+
+  defp check_pipeline_results([]), do: :ok
+
+  defp check_pipeline_results([{:ok, _response} | results]), do: check_pipeline_results(results)
+
+  defp check_pipeline_results([{:error, error} | _results]), do: {:error, handle_error(error)}
 
   defp q(connection, command) do
     case :eredis.q(connection, command, to_timeout(second: 15)) do
