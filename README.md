@@ -29,8 +29,9 @@ To publish `ghcr.io/chatarmin-com/cx-sequin:v0.14.6-1`, open **Actions → Publi
 Run workflow**, select `main`, and set the version to `v0.14.6-1`. The workflow builds the
 full self-hosted release for `linux/amd64`, checks its license files and startup against
 isolated Postgres and Redis containers, then publishes that verified image using
-GitHub's built-in token. Use a new version tag for each release. Pull requests that
-change this build setup run the same checks without publishing.
+GitHub's built-in token in a separate publishing job. Use a new version tag for each
+release. Pull requests that change this build setup run the same checks with read-only
+permissions, no registry login, and no release image upload or publishing.
 
 After the first publish, set the `cx-sequin` package visibility to **Public** to allow
 Railway to pull it without credentials. For a private package, configure Railway's

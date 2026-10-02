@@ -32,9 +32,8 @@ FROM ${BUILDER_IMAGE} AS builder
 ARG SELF_HOSTED
 ENV SELF_HOSTED=${SELF_HOSTED}
 
-# Pass through SENTRY_DSN to the build environment
+# An omitted DSN stays unset; Sentry rejects an explicitly empty environment value.
 ARG SENTRY_DSN
-ENV SENTRY_DSN=${SENTRY_DSN}
 
 # install build dependencies
 RUN apt-get update -y && apt-get install -y build-essential git curl cmake \
