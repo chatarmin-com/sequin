@@ -18,6 +18,40 @@
 
 # Sequin
 
+## Chatarmin fork: cx-sequin
+
+This repository is a Chatarmin-maintained fork of [Sequin](https://github.com/sequinstream/sequin),
+including a fix for Redis pipeline failures being acknowledged as successful deliveries.
+The original MIT license and Sequin Labs copyright notice are retained. This is an
+independent fork, not an official Sequin Labs release.
+
+To publish `ghcr.io/chatarmin-com/cx-sequin:v0.14.6-1`, open **Actions → Publish cx-sequin →
+Run workflow**, select `main`, and set the version to `v0.14.6-1`. The workflow builds the
+full self-hosted release for `linux/amd64`, checks its license files and startup against
+isolated Postgres and Redis containers, then publishes that verified image using
+GitHub's built-in token in a separate publishing job. Use a new version tag for each
+release. Pull requests that change this build setup run the same checks with read-only
+permissions, no registry login, and no release image upload or publishing.
+
+The self-hosted image defaults to `CRASH_REPORTING_DISABLED=1` and does not require
+upstream Sentry credentials. Enabling crash reporting requires building with your own
+`SENTRY_DSN` and overriding `CRASH_REPORTING_DISABLED` at runtime.
+
+After the first publish, set the `cx-sequin` package visibility to **Public** to allow
+Railway to pull it without credentials. For a private package, configure Railway's
+registry credentials with a GitHub token that can read that package.
+
+In the existing Railway Sequin service, update **Settings → Source** to the published
+image tag or digest and deploy. Keep the existing database, Redis, environment variables
+(especially `VAULT_KEY`), and volume mounts. Confirm the currently deployed Sequin version
+is compatible first: Sequin runs database migrations during startup.
+
+The image includes the original license, fork notice, and dependency license files under
+`/usr/share/licenses/cx-sequin`. The inherited upstream release workflows still target
+upstream infrastructure; use **Publish cx-sequin** for this fork.
+
+## Upstream overview
+
 Sequin is the [fastest](#performance) change data capture (CDC) platform for Postgres. Sequin makes it easy to stream Postgres to streaming platforms, queues, search indexes, and more (e.g. Kafka, GCP Pub/Sub, another Postgres, etc.). You can backfill existing rows and stream new changes in real-time.
 
 Sequin is a standalone Docker container that you can deploy next to your Postgres database.

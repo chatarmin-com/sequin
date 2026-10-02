@@ -1,0 +1,11 @@
+cx-sequin is a Chatarmin-maintained fork of Sequin.
+
+Upstream project: https://github.com/sequinstream/sequin
+Fork source: https://github.com/chatarmin-com/sequin
+
+Sequin is Copyright (c) 2024 Sequin Labs, Inc. and distributed under the MIT
+License. The original copyright and license text are retained in LICENSE.
+
+This fork is maintained independently and is not an official Sequin Labs release.
+Third-party license files are included in the image under
+/usr/share/licenses/cx-sequin/app and /usr/share/licenses/cx-sequin/cli.

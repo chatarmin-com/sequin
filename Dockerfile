@@ -17,6 +17,14 @@ RUN git clone --depth 1 --branch v${SEQUIN_CLI_VERSION} https://github.com/sequi
     && cd /tmp/sequin/cli \
     && go build -o /sequin-cli
 
+# Retain the CLI's upstream license and dependency notices.
+RUN mkdir -p /licenses/cli \
+    && cp /tmp/sequin/LICENSE /licenses/cli/LICENSE \
+    && cp /usr/local/go/LICENSE /licenses/cli/GO-LICENSE \
+    && cd /go/pkg/mod \
+    && find . -type f \( -iname 'LICENSE*' -o -iname 'COPYING*' -o -iname 'NOTICE*' \) \
+       -exec cp --parents {} /licenses/cli/ \;
+
 # ---- Elixir Build Stage ----
 FROM ${BUILDER_IMAGE} AS builder
 
@@ -24,9 +32,8 @@ FROM ${BUILDER_IMAGE} AS builder
 ARG SELF_HOSTED
 ENV SELF_HOSTED=${SELF_HOSTED}
 
-# Pass through SENTRY_DSN to the build environment
+# An omitted DSN stays unset; Sentry rejects an explicitly empty environment value.
 ARG SENTRY_DSN
-ENV SENTRY_DSN=${SENTRY_DSN}
 
 # install build dependencies
 RUN apt-get update -y && apt-get install -y build-essential git curl cmake \
@@ -95,6 +102,12 @@ COPY config/runtime.exs config/
 COPY rel rel
 RUN mix release
 
+# Retain license files from dependencies bundled into the release and assets.
+RUN mkdir -p /licenses/app \
+    && find deps assets/vendor assets/node_modules -type f \
+       \( -iname 'LICENSE*' -o -iname 'COPYING*' -o -iname 'NOTICE*' \) \
+       -exec cp --parents {} /licenses/app/ \;
+
 # start a new build stage so that the final image will only contain
 # the compiled release and other runtime necessities
 # ---- App Stage ----
@@ -131,10 +144,17 @@ RUN useradd --create-home app
 WORKDIR /home/app
 COPY --from=builder --chown=app /app/_build .
 
+COPY LICENSE NOTICE /usr/share/licenses/cx-sequin/
+COPY --from=builder /licenses/app /usr/share/licenses/cx-sequin/app/
+COPY --from=cli-builder /licenses/cli /usr/share/licenses/cx-sequin/cli/
+
 COPY .iex.exs .
 RUN ln -s /home/app/prod/rel/sequin/bin/sequin /usr/local/bin/sequin-server
 COPY scripts/start_commands.sh /scripts/start_commands.sh
 RUN chmod +x /scripts/start_commands.sh
+
+# Independent self-hosted builds have no upstream Sentry DSN baked in.
+ENV CRASH_REPORTING_DISABLED=${SELF_HOSTED}
 
 USER app
 
