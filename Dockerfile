@@ -153,6 +153,9 @@ RUN ln -s /home/app/prod/rel/sequin/bin/sequin /usr/local/bin/sequin-server
 COPY scripts/start_commands.sh /scripts/start_commands.sh
 RUN chmod +x /scripts/start_commands.sh
 
+# Independent self-hosted builds have no upstream Sentry DSN baked in.
+ENV CRASH_REPORTING_DISABLED=${SELF_HOSTED}
+
 USER app
 
 # Make port 4000 available to the world outside this container

@@ -33,6 +33,10 @@ GitHub's built-in token in a separate publishing job. Use a new version tag for 
 release. Pull requests that change this build setup run the same checks with read-only
 permissions, no registry login, and no release image upload or publishing.
 
+The self-hosted image defaults to `CRASH_REPORTING_DISABLED=1` and does not require
+upstream Sentry credentials. Enabling crash reporting requires building with your own
+`SENTRY_DSN` and overriding `CRASH_REPORTING_DISABLED` at runtime.
+
 After the first publish, set the `cx-sequin` package visibility to **Public** to allow
 Railway to pull it without credentials. For a private package, configure Railway's
 registry credentials with a GitHub token that can read that package.
