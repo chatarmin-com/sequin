@@ -291,6 +291,54 @@ defmodule SequinWeb.SinkConsumerControllerTest do
       assert updated_consumer.load_shedding_policy == :discard_on_full
     end
 
+    test "clears a finite retry limit when explicitly set to null", %{conn: conn, sink_consumer: sink_consumer} do
+      {:ok, _} = Consumers.update_sink_consumer(sink_consumer, %{max_retry_count: 5})
+
+      response = patch(conn, ~p"/api/sinks/#{sink_consumer.id}", %{max_retry_count: nil})
+      assert %{"max_retry_count" => nil} = json_response(response, 200)
+
+      {:ok, updated_consumer} = Consumers.find_sink_consumer(sink_consumer.account_id, id: sink_consumer.id)
+      assert updated_consumer.max_retry_count == nil
+
+      response = get(conn, ~p"/api/sinks/#{sink_consumer.id}")
+      assert %{"max_retry_count" => nil} = json_response(response, 200)
+
+      response = patch(conn, ~p"/api/sinks/#{sink_consumer.id}", %{max_retry_count: nil})
+      assert %{"max_retry_count" => nil} = json_response(response, 200)
+    end
+
+    test "preserves a finite retry limit when omitted from an update", %{conn: conn, sink_consumer: sink_consumer} do
+      {:ok, _} = Consumers.update_sink_consumer(sink_consumer, %{max_retry_count: 5})
+
+      response = patch(conn, ~p"/api/sinks/#{sink_consumer.id}", %{load_shedding_policy: "pause_on_full"})
+      assert %{"max_retry_count" => 5} = json_response(response, 200)
+
+      {:ok, updated_consumer} = Consumers.find_sink_consumer(sink_consumer.account_id, id: sink_consumer.id)
+      assert updated_consumer.max_retry_count == 5
+    end
+
+    test "changes an existing finite retry limit", %{conn: conn, sink_consumer: sink_consumer} do
+      {:ok, _} = Consumers.update_sink_consumer(sink_consumer, %{max_retry_count: 5})
+
+      response = patch(conn, ~p"/api/sinks/#{sink_consumer.id}", %{max_retry_count: 10})
+      assert %{"max_retry_count" => 10} = json_response(response, 200)
+
+      {:ok, updated_consumer} = Consumers.find_sink_consumer(sink_consumer.account_id, id: sink_consumer.id)
+      assert updated_consumer.max_retry_count == 10
+    end
+
+    for invalid_limit <- [0, -1, "unlimited"] do
+      test "rejects invalid retry limit #{inspect(invalid_limit)}", %{conn: conn, sink_consumer: sink_consumer} do
+        {:ok, _} = Consumers.update_sink_consumer(sink_consumer, %{max_retry_count: 5})
+
+        response = patch(conn, ~p"/api/sinks/#{sink_consumer.id}", %{max_retry_count: unquote(invalid_limit)})
+        assert json_response(response, 422)
+
+        {:ok, unchanged_consumer} = Consumers.find_sink_consumer(sink_consumer.account_id, id: sink_consumer.id)
+        assert unchanged_consumer.max_retry_count == 5
+      end
+    end
+
     test "updates the sink consumer to set batch=false", %{
       conn: conn,
       sink_consumer: sink_consumer,

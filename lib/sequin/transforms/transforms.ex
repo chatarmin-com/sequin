@@ -937,7 +937,7 @@ defmodule Sequin.Transforms do
           {:cont, {:ok, Map.put(acc, :max_retry_count, value)}}
 
         "max_retry_count" when is_nil(value) ->
-          {:cont, {:ok, acc}}
+          {:cont, {:ok, Map.put(acc, :max_retry_count, nil)}}
 
         "max_retry_count" ->
           {:halt, {:error, Error.validation(summary: "max_retry_count must be a non-negative integer")}}
